@@ -17,21 +17,38 @@ class NodeTraversal
 	private $counts = [];
 	private $nodes = [];
 
-	public function recurseNodes($node_id, $kill = false)
+	/**
+	 * I am using a depth first algorithm to traverse the nodes
+	 */
+	public function recurseNodes($node_id)
 	{
+		//Obviously would be removed for production, but is nice for debugging
 		echo "Traversing Node ID: {$node_id}<br>";
-		//For now assuming the data is always set correctly in the node json
+
+		//Using unique because the structure isn't a tree and so we can point at the same nodes multiple times
+		//This avoids infinite loops as well as a speed upgrade as I don't have to traverse nodes I've already seen
 		$unique = $this->setCount($node_id);
+
 		if ( $unique ) {
+			//I'm assuming the node will have the correct keys set everytime
+			//Depending on the data contract I'd probably add a validateNode method to verify we are getting correct data
+				//This would also be used to prevent 404s in case the id wasn't valid
 			$node = $this->visitNode($node_id);
+
+			//I am using depth first so this method would always take the left most node and traverse down until there were no left most nodes to search
 			foreach ($node['child_node_ids'] as $child_node_id) {
 				$this->recurseNodes($child_node_id);
 			}
 		} else {
+			//More just helpful debugging
 			echo "Skipping node traversal of ID: {$node_id} as we've already seen it<br/>";
 		}
 	}
 
+	/**
+	 * Straight forward method does a get request with the ID as the param
+	 * decodes the json and sends it back
+	 */
 	public function visitNode($id) {
 		$json = file_get_contents("https://nodes-on-nodes-challenge.herokuapp.com/nodes/{$id}");
 		$json = json_decode($json, true);
@@ -40,6 +57,7 @@ class NodeTraversal
 	}
 
 	/**
+	 * Using an associative array for O(1) lookups that's why count is setup in node_id => count
 	 * @return false if we've already been to the node true if this is our first time seeing it
 	 */
 	private function setCount($node_id)
@@ -53,11 +71,15 @@ class NodeTraversal
 		}
 	}
 
+	/**
+	 * The below methods are just a way to print out the needed info
+	 */
 	public function printCount()
 	{
 		echo "<pre>";
 		print_r($this->counts);
 	}
+
 	public function printNodes()
 	{
 		echo "<pre>";
